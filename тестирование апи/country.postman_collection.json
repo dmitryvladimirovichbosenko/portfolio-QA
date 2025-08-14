@@ -1,0 +1,160 @@
+{
+	"info": {
+		"_postman_id": "79bd7bac-89f3-4326-a868-036fce2af7dc",
+		"name": "country",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40400818"
+	},
+	"item": [
+		{
+			"name": "get country",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost/country/api/get_country.php?country=japan&capital=Canberra&region=Africa",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"country",
+						"api",
+						"get_country.php"
+					],
+					"query": [
+						{
+							"key": "country",
+							"value": "japan"
+						},
+						{
+							"key": "capital",
+							"value": "Canberra"
+						},
+						{
+							"key": "region",
+							"value": "Africa"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "add country",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"country\": \"Japan2\",\r\n    \"capital\": \"Tokyo2\",\r\n    \"region\": \"Asia\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/country/api/add_country.php",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"country",
+						"api",
+						"add_country.php"
+					],
+					"query": [
+						{
+							"key": "",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "edit country",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"country\": \"Japan2\",\r\n    \"newCountry\": \"Netherlands\",\r\n    \"newCapital\": \"Amsterdam\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/country/api/edit_country.php",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"country",
+						"api",
+						"edit_country.php"
+					],
+					"query": [
+						{
+							"key": "",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "del country",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"country\": \"Japan2\",\r\n    \"newCountry\": \"Netherlands\",\r\n    \"newCapital\": \"Amsterdam\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/country/api/delete_country.php?country=Netherlands",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"country",
+						"api",
+						"delete_country.php"
+					],
+					"query": [
+						{
+							"key": "country",
+							"value": "Netherlands"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

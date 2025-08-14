@@ -1,0 +1,158 @@
+Установка и запуск автоматических SQL-тестов
+Мы будем использовать:
+
+Java + JUnit — для написания тестов
+
+JDBC — чтобы подключаться к базе
+
+H2 Database (или PostgreSQL/MySQL, если нужно) — как тестовую БД
+
+🔧 Шаг 1: Установи JDK и IntelliJ IDEA
+1. Установи Java (JDK)
+Скачай и установи JDK:
+👉 https://adoptium.net/en-GB/temurin/releases/
+
+Проверь установку:
+
+bash
+Копировать
+Редактировать
+java -version
+Увидишь примерно:
+
+nginx
+Копировать
+Редактировать
+openjdk 17.0.8
+2. Установи IntelliJ IDEA
+Скачай:
+👉 https://www.jetbrains.com/idea/download
+
+Выбери Community Edition (бесплатная).
+
+📁 Шаг 2: Создай проект в IntelliJ IDEA
+Создай новый Java-проект
+
+Выбери JDK 17 (или то, что установлено)
+
+Назови проект SQLAutoTest
+
+Нажми «Create»
+
+📦 Шаг 3: Подключи зависимости
+Открой файл pom.xml (если используешь Maven) и добавь:
+в xml
+
+1.
+
+<dependencies>
+  <dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>5.10.0</version>
+    <scope>test</scope>
+  </dependency>
+
+  <dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <version>2.2.224</version>
+  </dependency>
+</dependencies>
+
+2.!
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>SQLAutoTest</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <dependencies>
+        <!-- JUnit 5 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- H2 Database -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Подключение JUnit 5 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.1.2</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+🔸 Это установит:
+
+JUnit 5 — для автотестов
+
+H2 — тестовая in-memory база данных (ничего ставить не нужно!)
+
+🧪 Шаг 4: Напиши простой SQL-тест
+Создай файл src/test/java/SqlTest.java и вставь код:
+
+java
+Копировать
+Редактировать
+import org.junit.jupiter.api.*;
+import java.sql.*;
+
+public class SqlTest {
+
+    static Connection conn;
+
+    @BeforeAll
+    static void setup() throws SQLException {
+        conn = DriverManager.getConnection("jdbc:h2:mem:testdb", "sa", "");
+        Statement stmt = conn.createStatement();
+        stmt.execute("CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(100))");
+        stmt.execute("INSERT INTO users VALUES (1, 'Dima'), (2, 'Ivan')");
+    }
+
+    @Test
+    void testUserCount() throws SQLException {
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM users");
+        rs.next();
+        int count = rs.getInt(1);
+        Assertions.assertEquals(2, count); // ожидаем 2 пользователя
+    }
+
+    @AfterAll
+    static void teardown() throws SQLException {
+        conn.close();
+    }
+}
+▶️ Шаг 5: Запусти тест
+Нажми зелёную стрелку слева от testUserCount()
+
+Убедись, что он прошёл ✅
+
+🔄 Что ты только что сделал?
+Создал in-memory базу данных (работает прямо в памяти)
+
+Создал таблицу users и вставил туда 2 строки
+
+Написал автотест, который проверяет, что в таблице 2 записи
+
+Всё работает без установки СУБД!

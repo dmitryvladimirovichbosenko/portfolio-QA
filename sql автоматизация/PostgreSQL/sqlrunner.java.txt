@@ -1,0 +1,172 @@
+package db;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class SqlRunner {
+
+    // 👉 Поменяй доступы при необходимости
+    private static final String URL  = "jdbc:postgresql://localhost:5432/postgres?sslmode=disable";
+    private static final String USER = "postgres";
+    private static final String PASS = "1234";
+
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.out.println("Укажи путь к .sql файлу или папке с .sql: например\n  java db.SqlRunner scripts/init.sql\n  java db.SqlRunner scripts");
+            return;
+        }
+
+        Path path = Paths.get(args[0]);
+        if (!Files.exists(path)) {
+            System.err.println("Файл/папка не найдены: " + path.toAbsolutePath());
+            return;
+        }
+
+        List<Path> files = new ArrayList<>();
+        try {
+            if (Files.isDirectory(path)) {
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(path, "*.sql")) {
+                    for (Path p : ds) files.add(p);
+                }
+                files.sort(null); // по алфавиту
+            } else {
+                files.add(path);
+            }
+        } catch (IOException e) {
+            System.err.println("Ошибка чтения файлов: " + e.getMessage());
+            return;
+        }
+
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASS)) {
+            conn.setAutoCommit(false);
+            System.out.println("✅ Подключились к PostgreSQL. Начинаем выполнение " + files.size() + " файла(ов).");
+
+            for (Path sqlFile : files) {
+                System.out.println("\n▶ Выполняю: " + sqlFile.getFileName());
+                String sql = Files.readString(sqlFile, StandardCharsets.UTF_8);
+                List<String> statements = splitSql(sql);
+
+                try (Statement st = conn.createStatement()) {
+                    for (String s : statements) {
+                        String trimmed = s.trim();
+                        if (trimmed.isEmpty()) continue;
+
+                        boolean hasResultSet = st.execute(trimmed);
+                        if (hasResultSet) {
+                            try (ResultSet rs = st.getResultSet()) {
+                                printResultSet(rs, 50);
+                            }
+                        } else {
+                            int upd = st.getUpdateCount();
+                            System.out.println("✓ Обновлено строк: " + (upd < 0 ? 0 : upd));
+                        }
+                    }
+                }
+            }
+
+            conn.commit();
+            System.out.println("\n🎉 Готово! Все изменения зафиксированы (COMMIT).");
+        } catch (Exception e) {
+            System.err.println("\n❌ Ошибка, откатываю транзакцию (ROLLBACK):");
+            e.printStackTrace();
+        }
+    }
+
+    // --- Режем SQL на операторы по ';', уважая строки, комментарии и $$…$$ ---
+    private static List<String> splitSql(String sql) {
+        List<String> out = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+
+        boolean inSingle = false; // внутри '...'
+        boolean inLineComment = false; // -- до конца строки
+        boolean inBlockComment = false; // /* ... */
+        boolean inDollar = false; // простой $$ ... $$ (без именованных тегов)
+
+        for (int i = 0; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            char n = (i + 1 < sql.length()) ? sql.charAt(i + 1) : '\0';
+
+            // обработка комментариев
+            if (!inSingle && !inDollar) {
+                if (!inBlockComment && !inLineComment && c == '-' && n == '-') {
+                    inLineComment = true;
+                } else if (!inBlockComment && !inLineComment && c == '/' && n == '*') {
+                    inBlockComment = true;
+                    i++; // проглотить '*'
+                    continue;
+                } else if (inBlockComment && c == '*' && n == '/') {
+                    inBlockComment = false;
+                    i++;
+                    continue;
+                } else if (inLineComment && (c == '\n' || c == '\r')) {
+                    inLineComment = false;
+                }
+
+                if (inBlockComment || inLineComment) {
+                    // пропускаем символы комментария
+                    continue;
+                }
+            }
+
+            // строки и dollar-quoting
+            if (!inDollar && c == '\'' && !inLineComment && !inBlockComment) {
+                // переключаем одиночные кавычки, если не экранированы одинарной кавычкой (Postgres удваивает их)
+                inSingle = !inSingle;
+                cur.append(c);
+                continue;
+            }
+            if (!inSingle && !inLineComment && !inBlockComment && c == '$' && n == '$') {
+                inDollar = !inDollar; // вход/выход из $$...$$
+                cur.append(c).append(n);
+                i++;
+                continue;
+            }
+
+            // точка с запятой завершает оператор только вне строк/$$/комментариев
+            if (c == ';' && !inSingle && !inDollar && !inLineComment && !inBlockComment) {
+                out.add(cur.toString());
+                cur.setLength(0);
+                continue;
+            }
+
+            cur.append(c);
+        }
+
+        if (cur.toString().trim().length() > 0) {
+            out.add(cur.toString());
+        }
+        return out;
+    }
+
+    private static void printResultSet(ResultSet rs, int limit) throws SQLException {
+        ResultSetMetaData md = rs.getMetaData();
+        int cols = md.getColumnCount();
+
+        // заголовки
+        StringBuilder header = new StringBuilder();
+        for (int i = 1; i <= cols; i++) {
+            if (i > 1) header.append(" | ");
+            header.append(md.getColumnLabel(i));
+        }
+        System.out.println(header);
+
+        // строки
+        int shown = 0;
+        while (rs.next() && shown < limit) {
+            StringBuilder row = new StringBuilder();
+            for (int i = 1; i <= cols; i++) {
+                if (i > 1) row.append(" | ");
+                row.append(rs.getString(i));
+            }
+            System.out.println(row);
+            shown++;
+        }
+        if (!rs.isClosed() && shown == limit) {
+            System.out.println("… (показаны первые " + limit + " строк)");
+        }
+    }
+}

@@ -1,0 +1,56 @@
+package db;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
+public class TestPostgres {
+    public static void main(String[] args) {
+        // 👉 Поменяй при необходимости имя БД/пользователя/пароль
+        String url = "jdbc:postgresql://localhost:5432/postgres?sslmode=disable";
+        String user = "postgres";
+        String password = "1234";
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("✅ Подключение к PostgreSQL успешно!");
+
+            try (Statement stmt = conn.createStatement()) {
+                // 1) Временная таблица (удалится при закрытии соединения)
+                stmt.executeUpdate("""
+                        CREATE TEMP TABLE qa_demo_temp (
+                            id    SERIAL PRIMARY KEY,
+                            title TEXT NOT NULL
+                        )
+                        """);
+                System.out.println("📦 Временная таблица qa_demo_temp создана.");
+
+                // 2) Вставка данных
+                stmt.executeUpdate("""
+                        INSERT INTO qa_demo_temp(title)
+                        VALUES ('Hello PostgreSQL'), ('Second row')
+                        """);
+                System.out.println("✏️ Данные добавлены.");
+
+                // 3) Вывод данных
+                try (ResultSet rs = stmt.executeQuery("""
+                        SELECT id, title
+                        FROM qa_demo_temp
+                        ORDER BY id
+                        """)) {
+                    System.out.println("\n📄 Содержимое qa_demo_temp:");
+                    while (rs.next()) {
+                        int id = rs.getInt("id");
+                        String title = rs.getString("title");
+                        System.out.println(id + ": " + title);
+                    }
+                }
+            }
+
+            System.out.println("\n🧹 Соединение закроется — временная таблица исчезнет.");
+        } catch (Exception e) {
+            System.out.println("❌ Ошибка подключения или работы с БД:");
+            e.printStackTrace();
+        }
+    }
+}

@@ -1,0 +1,70 @@
+Установка JavaScript (Node.js) и Selenium для автотестов
+
+Шаг 1: Установи Node.js
+Перейди на сайт: https://nodejs.org
+
+Скачай LTS-версию (Long-Term Support) — она стабильная.
+
+Установи, просто нажимая «Далее» — это установит:
+
+node — интерпретатор JavaScript
+
+npm — менеджер пакетов
+
+После установки проверь:
+
+Открой терминал / командную строку и введи:
+
+
+node -v
+npm -v
+Если всё установлено — ты увидишь версии, например:
+
+
+v20.11.0
+9.6.7
+ Шаг 2: Создай проект и установи Selenium
+Создай папку проекта:
+
+
+mkdir selenium-test
+cd selenium-test
+Инициализируй Node.js-проект:
+
+npm init -y
+Установи Selenium WebDriver:
+
+npm install selenium-webdriver
+ Шаг 3: Установи драйвер Chrome или Firefox
+Для работы браузера с Selenium нужен драйвер.
+
+Если используешь Google Chrome:
+Установи chromedriver:
+
+npm install chromedriver
+Проверь, чтобы версия chromedriver соответствовала версии Chrome (или обнови Chrome).
+
+ Пример простого теста на JavaScript (Node.js + Selenium)
+Создай файл test.js:
+
+
+const { Builder, By, Key, until } = require('selenium-webdriver');
+
+async function example() {
+  let driver = await new Builder().forBrowser('chrome').build();
+  try {
+    await driver.get('https://www.google.com');
+    await driver.findElement(By.name('q')).sendKeys('Selenium', Key.RETURN);
+    await driver.wait(until.titleContains('Selenium'), 10000);
+    console.log('Тест пройден!');
+  } finally {
+    await driver.quit();
+  }
+}
+
+example();
+
+
+Запусти: node test.js
+
+
